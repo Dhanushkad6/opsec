@@ -6,21 +6,25 @@ import com.opsec.series.util.ACTIVITY_STATUS;
 import com.opsec.series.util.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 
 @Service
 public class SeriesService {
 
     //@Value("${series.domain.url}")
-    private String seriesDomainUrl = "https://www.watchseries1.video/";
+    private String seriesDomainUrl = "https://www.watchseries1.video/all-series/";
     private static final Logger LOGGER = LogManager.getLogger(SeriesService.class);
 
 
-    public SeriesResponse getPage(String title) {
+    @Async
+    public CompletableFuture<SeriesResponse> getPage(String title) {
 
         long startTime = System.currentTimeMillis();
         String methodName = "getPage | TRACE_ID | " + startTime;
@@ -38,8 +42,16 @@ public class SeriesService {
         URL domain = null;
         URL url = null;
         try {
-            domain = new URL(seriesDomainUrl);
-            url = new URL(domain + title);
+
+            if (title != null && !title.equals("")){
+                seriesDomainUrl = seriesDomainUrl.replace("all-series/", "");
+                domain = new URL(seriesDomainUrl);
+                url = new URL(domain + title);
+            }else{
+                domain = new URL(seriesDomainUrl);
+                url = domain;
+            }
+
         } catch (MalformedURLException e) {
             LOGGER.error(methodName , ACTIVITY_STATUS.ERROR,
                     ACTIVITY_STATUS.SERVICE_END, "| MalformedURLException occurred: " + e.getMessage());
@@ -61,7 +73,8 @@ public class SeriesService {
         LOGGER.info(methodName + ACTIVITY_STATUS.END + ACTIVITY_STATUS.SERVICE_END,
                 "| responseMessage: "+ seriesResponse.getResponseMessage());
 
-        return seriesResponse;
+        return CompletableFuture.completedFuture(seriesResponse);
 
     }
+
 }
